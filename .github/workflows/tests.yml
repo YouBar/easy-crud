@@ -47,7 +47,11 @@ jobs:
             --no-interaction --no-progress
 
       - name: Report versions
-        run: composer show laravel/framework phpunit/phpunit | grep -E "^(name|versions)"
+        # composer show takes one package; a second argument is read as a
+        # version constraint. Filter the installed list instead.
+        run: |
+          composer show --installed \
+            | grep -E '^(laravel/framework|orchestra/testbench|phpunit/phpunit)\s'
 
       - name: Run tests
         run: vendor/bin/phpunit
