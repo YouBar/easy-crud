@@ -42,11 +42,15 @@ jobs:
       # Requires a PAT with `repo` scope on Youbar/youbar.nl, stored here as
       # YOUBAR_DISPATCH_TOKEN.
       - name: Dispatch
+        # Values go through env rather than being interpolated into the
+        # script, and -f sends them as strings (-F would try to type-cast).
         env:
           GH_TOKEN: ${{ secrets.YOUBAR_DISPATCH_TOKEN }}
+          SOURCE_REPO: ${{ github.repository }}
+          VERSION: ${{ github.event.release.tag_name }}
         run: |
           gh api repos/YouBar/youbar.nl/dispatches \
             -f event_type=docs-updated \
-            -F client_payload[package]=easy-crud \
-            -F client_payload[repository]=${{ github.repository }} \
-            -F client_payload[version]="${{ github.event.release.tag_name }}"
+            -f "client_payload[package]=easy-crud" \
+            -f "client_payload[repository]=$SOURCE_REPO" \
+            -f "client_payload[version]=$VERSION"
