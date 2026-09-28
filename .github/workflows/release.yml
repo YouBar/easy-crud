@@ -12,9 +12,10 @@ on:
   push:
     branches: [main]
 
+# Only contents is needed from GITHUB_TOKEN; the release pull request is
+# opened with RELEASE_PLEASE_TOKEN instead (see below).
 permissions:
   contents: write
-  pull-requests: write
 
 jobs:
   release-please:
@@ -23,8 +24,21 @@ jobs:
       released: ${{ steps.release.outputs.release_created }}
       tag: ${{ steps.release.outputs.tag_name }}
     steps:
-      - uses: googleapis/release-please-action@v4
+      - uses: googleapis/release-please-action@v5
         id: release
         with:
+          # GITHUB_TOKEN cannot open a pull request unless "Allow GitHub Actions
+          # to create and approve pull requests" is enabled, which is not always
+          # available. A token acts as its owner instead, so the restriction
+          # does not apply.
+          #
+          # Use a fine-grained PAT limited to this repository, with:
+          #   Contents: read and write        tag and publish the release
+          #   Pull requests: read and write   open and update the release PR
+          #
+          # Store it as the RELEASE_PLEASE_TOKEN secret. A side benefit over
+          # GITHUB_TOKEN: pull requests it opens do trigger other workflows, so
+          # tests and quality run on the release PR before you merge it.
+          token: ${{ secrets.RELEASE_PLEASE_TOKEN }}
           config-file: release-please-config.json
           manifest-file: .release-please-manifest.json
