@@ -1,0 +1,53 @@
+name: tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        php: ['8.2', '8.3', '8.4']
+        laravel: [12, 13]
+        stability: [prefer-lowest, prefer-stable]
+        include:
+          # Testbench majors track Laravel majors.
+          - laravel: 12
+            testbench: '^10.0'
+          - laravel: 13
+            testbench: '^11.0'
+        exclude:
+          # Laravel 13 requires PHP 8.3.
+          - php: '8.2'
+            laravel: 13
+
+    name: PHP ${{ matrix.php }} · Laravel ${{ matrix.laravel }} · ${{ matrix.stability }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          extensions: dom, curl, libxml, mbstring, zip, pdo, sqlite, pdo_sqlite
+          coverage: none
+
+      - name: Install dependencies
+        run: |
+          composer config --unset platform.php
+          composer require --dev "orchestra/testbench:${{ matrix.testbench }}" \
+            --no-interaction --no-update
+          composer update --${{ matrix.stability }} --prefer-dist \
+            --no-interaction --no-progress
+
+      - name: Report versions
+        run: composer show laravel/framework phpunit/phpunit | grep -E "^(name|versions)"
+
+      - name: Run tests
+        run: vendor/bin/phpunit

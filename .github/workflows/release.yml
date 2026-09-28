@@ -1,0 +1,30 @@
+name: release
+
+# Conventional commits on main drive versioning. release-please keeps a rolling
+# "chore: release" PR containing the next version bump and the generated
+# changelog; merging that PR tags the release and publishes a GitHub Release.
+#
+# Packagist needs no step here. It listens to this repository through the
+# Packagist GitHub App (one-time setup, see CONTRIBUTING), so a new tag is
+# picked up automatically. There is no publish credential in CI by design.
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  release-please:
+    runs-on: ubuntu-latest
+    outputs:
+      released: ${{ steps.release.outputs.release_created }}
+      tag: ${{ steps.release.outputs.tag_name }}
+    steps:
+      - uses: googleapis/release-please-action@v4
+        id: release
+        with:
+          config-file: release-please-config.json
+          manifest-file: .release-please-manifest.json

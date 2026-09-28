@@ -1,0 +1,11 @@
+<?php
+
+namespace {{ namespace }};
+
+use {{ modelNamespace }};
+use Youbar\EasyCrud\CrudController;
+
+class {{ class }} extends CrudController
+{
+    protected string $model = {{ model }}::class;
+}

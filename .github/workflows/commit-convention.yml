@@ -1,0 +1,38 @@
+name: commit convention
+
+# The repository squash-merges, so the pull request title becomes the commit
+# message on main -- which is what release-please reads. Linting the title is
+# therefore equivalent to linting the commit, without needing Node tooling or
+# git hooks in a PHP package.
+
+on:
+  pull_request:
+    types: [opened, edited, synchronize, reopened]
+
+permissions:
+  pull-requests: read
+
+jobs:
+  title:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: amannn/action-semantic-pull-request@v5
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          types: |
+            feat
+            fix
+            perf
+            refactor
+            docs
+            test
+            ci
+            build
+            chore
+            style
+            deps
+          requireScope: false
+          subjectPattern: ^(?![A-Z]).+$
+          subjectPatternError: |
+            The subject "{subject}" should start with a lowercase character.

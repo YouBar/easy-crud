@@ -1,0 +1,52 @@
+name: docs
+
+# This repository ships documentation as Markdown only. The site that renders
+# it lives in youbar.nl, which pulls docs/content straight from git with Nuxt
+# Content's remote source. So there is nothing to build here -- only to check
+# that the Markdown is sound, and to tell youbar.nl when a new tag exists.
+
+on:
+  push:
+    branches: [main]
+    paths: ['docs/**', '.github/workflows/docs.yml', '.github/scripts/check-docs.mjs']
+  pull_request:
+    paths: ['docs/**', '.github/workflows/docs.yml', '.github/scripts/check-docs.mjs']
+  release:
+    types: [published]
+  workflow_dispatch:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    name: check content
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      # No dependencies to install: the checker is plain Node.
+      - name: Validate front matter and internal links
+        run: node .github/scripts/check-docs.mjs
+
+  ship:
+    needs: check
+    if: github.event_name == 'release'
+    runs-on: ubuntu-latest
+    name: notify youbar.nl
+    steps:
+      # youbar.nl pins each docs collection to a tag. This tells it a new one
+      # exists so it can move the pointer and rebuild.
+      #
+      # Requires a PAT with `repo` scope on Youbar/youbar.nl, stored here as
+      # YOUBAR_DISPATCH_TOKEN.
+      - name: Dispatch
+        env:
+          GH_TOKEN: ${{ secrets.YOUBAR_DISPATCH_TOKEN }}
+        run: |
+          gh api repos/YouBar/youbar.nl/dispatches \
+            -f event_type=docs-updated \
+            -F client_payload[package]=easy-crud \
+            -F client_payload[repository]=${{ github.repository }} \
+            -F client_payload[version]="${{ github.event.release.tag_name }}"
